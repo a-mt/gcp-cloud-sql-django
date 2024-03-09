@@ -1,0 +1,4 @@
+.env
+src/static
+__pycache__
+/*.json

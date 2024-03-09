@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+  db:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.0
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "1234"
+    volumes:
+      - ./testing-cloudsql-416715-704f22c3423c.json:/srv/cloud_svc_credentials.json
+    healthcheck:
+      disable: true
+    command:
+      - "--address"
+      - "0.0.0.0"
+      - "--port"
+      - "1234"
+      - "--credentials-file"
+      - "/srv/cloud_svc_credentials.json"
+      - "$DATABASE_CONNECTION_NAME"
+
+  api:
+    image: gcp-gke-django:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: "1234"
+    volumes:
+      - ./src:/srv/www:delegated
+      - ./docker-entrypoint.sh:/srv/docker-entrypoint.sh:delegated
+    healthcheck:
+      disable: true
+    entrypoint: "bash /srv/docker-entrypoint.sh --migrate"
+    command:
+      - "./manage.py"
+      - "runserver"
+      - "0.0.0.0:8000"
