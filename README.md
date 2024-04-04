@@ -11,6 +11,12 @@
   - Compute Engine
   - Cloud SQL
   - Cloud SQL Admin
+  - Identity and Access Management (IAM) — for service accounts
+  - Cloud Resource Manager — for IAM member roles
+
+## Create a Cloud SQL instance (PostgreSQL)
+
+### Manually
 
 * Install gcloud
 
@@ -31,8 +37,6 @@
   Your active configuration is: [testing-cloudsql]
   testing-cloudsql-416715
   ```
-
-## Set a Cloud SQL for PostgreSQL instance
 
 * Create an instance:  
   Go to [Cloud SQL instances](https://console.cloud.google.com/sql/instances) > Create instance > PostgreSQL (will take about 10 minutes to create it)
@@ -85,15 +89,37 @@
 * Go to [Monitoring > Metrics explorer](https://console.cloud.google.com/monitoring/metrics-explorer):  
   Metric: Cloud SQL Database - Number of rows processed
 
-## Launch locally
+### Using terraform
 
-* Update the path of the key used by the db containers in docker-compose.yaml
+* Create the infra
+
+  ``` bash
+  cd infra
+  terraform init
+  terraform apply
+  ```
+
+* Retrieve the environment variables and credentials
+
+  ``` bash
+  terraform output postgres_connection_name
+  terraform output postgres_database_name
+  terraform output postgres_database_user
+  terraform output postgres_database_password
+
+  terraform output -raw postgres_connection_json_key | base64 -d > ../creds.json
+  ```
+
+---
+
+## Launch
+
+* Update if necessary the path of the JSON key used by the db containers in docker-compose.yaml
 
 * Create the .env file  
   (set DEBUG to true to serve staticfiles)
 
   ```
-  GOOGLE_CLOUD_PROJECT=testing-django-416622
   DATABASE_CONNECTION_NAME=testing-cloudsql-416715:europe-west1:django-postgres
   DATABASE_NAME=django
   DATABASE_USERNAME=django-user
@@ -109,6 +135,15 @@
   ```
 
 * Go to localhost:8000
+
+* Create a super admin
+
+  ``` bash
+  python manage.py createsuperuser
+  ```
+
+  Check you can now log in:  
+  http://localhost:8000/admin
 
 ## Utils
 
@@ -139,13 +174,3 @@
 
   Check you have access to it:  
   http://localhost:8000/static/admin/css/base.css
-
-* Create a super admin
-
-  ``` bash
-  python manage.py createsuperuser
-  ```
-
-  Check you can log in:  
-  http://localhost:8000/admin
-
